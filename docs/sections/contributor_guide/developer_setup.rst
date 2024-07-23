@@ -23,7 +23,7 @@ If an existing conda (:miniforge:`Miniforge<>`, :miniconda:`Miniconda<>`, :anaco
 
 If the above is successful, you will be in a ``uwtools`` development shell. See below for usage information. You may exit the shell with ``exit`` or ``ctrl-d``.
 
-Future ``make devshell`` invocations will be almost instantaneous, as the underlying virtual environment will already exist. In general, all source code changes will be immediately live in the development shell, subject to execution, test, etc. But some changes --- especially to the contents of the ``recipe/`` directory or to the ``src/setup.py`` module --- may require recreation of the development shell. If you know this is needed, or when in doubt:
+Future ``make devshell`` invocations will be almost instantaneous, as the underlying virtual environment will already exist. In general, all source code changes will immediately live in the development shell, subject to execution, test, etc. But some changes --- especially to the contents of the ``recipe/`` directory or to the ``src/setup.py`` module --- may require recreation of the development shell. If you know this is needed, or when in doubt:
 
   #. Exit the development shell.
   #. Run ``make clean-devenv`` (or ``conda env remove -y -n DEV-uwtools``) to remove the old environment.

@@ -22,7 +22,7 @@ def realize(
 
     If no input file is specified, ``stdin`` is read. A ``YAMLConfig`` object may also be provided
     as input. If no output file is specified, ``stdout`` is written to. Both the input config and
-    output Rocoto XML will be validated against appropriate schcemas.
+    output Rocoto XML will be validated against appropriate schemas.
 
     :param config: Path to YAML input file (``None`` or unspecified => read ``stdin``), or
         ``YAMLConfig`` object
