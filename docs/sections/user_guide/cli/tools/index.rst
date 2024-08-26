@@ -5,6 +5,7 @@ Tools
    :maxdepth: 1
 
    config
-   file
+   execute
+   fs
    rocoto
    template

@@ -52,19 +52,18 @@ def driverobj(config):
 @mark.parametrize(
     "method",
     [
-        "_driver_config",
-        "_resources",
+        "_run_resources",
         "_run_via_batch_submission",
         "_run_via_local_execution",
         "_runscript",
         "_runscript_done_file",
         "_runscript_path",
         "_scheduler",
-        "_taskname",
         "_validate",
         "_write_runscript",
         "run",
         "runscript",
+        "taskname",
     ],
 )
 def test_Shave(method):
@@ -81,15 +80,15 @@ def test_Shave_provisioned_rundir(driverobj):
         mocks[m].assert_called_once_with()
 
 
-def test_Shave__driver_name(driverobj):
-    assert driverobj._driver_name == "shave"
+def test_Shave_driver_name(driverobj):
+    assert driverobj.driver_name() == Shave.driver_name() == "shave"
 
 
 def test_Shave__runcmd(driverobj):
     cmd = driverobj._runcmd
-    nx = driverobj._driver_config["config"]["nx"]
-    ny = driverobj._driver_config["config"]["ny"]
-    nh4 = driverobj._driver_config["config"]["nh4"]
-    input_file_path = driverobj._driver_config["config"]["input_grid_file"]
+    nx = driverobj.config["config"]["nx"]
+    ny = driverobj.config["config"]["ny"]
+    nh4 = driverobj.config["config"]["nh4"]
+    input_file_path = driverobj._config["config"]["input_grid_file"]
     output_file_path = input_file_path.replace(".nc", "_NH0.nc")
     assert cmd == f"/path/to/shave {nx} {ny} {nh4} {input_file_path} {output_file_path}"

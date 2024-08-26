@@ -19,7 +19,7 @@ _ConfigVal = Union[bool, dict, float, int, list, str, UWYAMLConvert, UWYAMLRemov
 
 class J2Template:
     """
-    Reads Jinja2 templates from files or strings, and renders them using the user-provided values.
+    Read Jinja2 templates from files or strings, and render them using the user-provided values.
     """
 
     def __init__(
@@ -90,9 +90,7 @@ class J2Template:
     @property
     def undeclared_variables(self) -> set[str]:
         """
-        Returns the names of variables needed to render the template.
-
-        :return: Names of variables needed to render the template.
+        The names of variables needed to render the template.
         """
         j2_parsed = self._j2env.parse(self._template_str)
         return meta.find_undeclared_variables(j2_parsed)
@@ -170,7 +168,7 @@ def render(
     :param searchpath: Paths to search for extra templates.
     :param values_needed: Just report variables needed to render the template?
     :param dry_run: Run in dry-run mode?
-    :return: The rendered template, or None.
+    :return: The unrendered template if values_needed is True, the rendered template, or None.
     """
     _report(locals())
     values = _supplement_values(
@@ -180,11 +178,11 @@ def render(
     undeclared_variables = template.undeclared_variables
 
     # If a report of variables required to render the template was requested, make that report and
-    # then return.
+    # then return the unrendered template.
 
     if values_needed:
         _values_needed(undeclared_variables)
-        return None
+        return str(template)
 
     # Render the template. If there are missing values, report them and return an error to the
     # caller.
@@ -196,7 +194,7 @@ def render(
     try:
         rendered = template.render()
     except UndefinedError as e:
-        log.error("Render failed with error: %s", str(e))
+        log.error("Template render failed with error: %s", str(e))
         return None
 
     # Log (dry-run mode) or write the rendered template.
@@ -292,7 +290,7 @@ def _log_missing_values(missing: list[str]) -> None:
 
     :param missing: Variables with no corresponding values.
     """
-    log.error("Required value(s) not provided:")
+    log.error("Value(s) required to render template not provided:")
     for key in missing:
         log.error(f"{INDENT}{key}")
 
@@ -322,7 +320,7 @@ def _report(args: dict) -> None:
     :param args: The argument names and their values.
     """
     dashes = lambda: log.debug("-" * MSGWIDTH)
-    log.debug("Internal arguments:")
+    log.debug("Internal arguments when rendering template:")
     dashes()
     for varname, value in args.items():
         log.debug("%16s: %s", varname, value)
@@ -349,15 +347,15 @@ def _supplement_values(
         values_format = values_format or get_file_format(values_src)
         values_src_class = format_to_config(values_format)
         values = values_src_class(values_src).data
-        log.debug("Read initial values from %s", values_src)
+        log.debug("Read initial template values from %s", values_src)
     else:
         values = values_src or {}
     if overrides:
         values.update(overrides)
-        log.debug("Supplemented values with overrides: %s", " ".join(overrides))
+        log.debug("Supplemented template values with overrides: %s", " ".join(overrides))
     if env:
         values.update(os.environ)
-        log.debug("Supplemented values with environment variables")
+        log.debug("Supplemented template values with environment variables")
     return values
 
 

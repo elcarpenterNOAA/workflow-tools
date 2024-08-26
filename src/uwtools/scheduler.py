@@ -13,7 +13,8 @@ from typing import Any, Optional
 
 from uwtools.exceptions import UWConfigError
 from uwtools.logging import log
-from uwtools.utils.processing import execute
+from uwtools.strings import STR
+from uwtools.utils.processing import run_shell_cmd
 
 
 class JobScheduler(ABC):
@@ -22,7 +23,8 @@ class JobScheduler(ABC):
     """
 
     def __init__(self, props: dict[str, Any]):
-        self._props = {k: v for k, v in props.items() if k != "scheduler"}
+        self._scheduler = props[STR.scheduler]
+        self._props = {k: v for k, v in props.items() if k != STR.scheduler}
         self._validate_props()
 
     # Public methods
@@ -30,18 +32,20 @@ class JobScheduler(ABC):
     @property
     def directives(self) -> list[str]:
         """
-        Returns resource-request scheduler directives.
+        The resource-request scheduler directives.
         """
         pre, sep = self._prefix, self._directive_separator
         ds = []
         for key, value in self._processed_props.items():
+            if key in self._forbidden_directives:
+                msg = "Directive '%s' invalid for scheduler '%s'"
+                raise UWConfigError(msg % (key, self._scheduler))
             if key in self._managed_directives:
                 switch = self._managed_directives[key]
-                ds.append(
-                    "%s %s" % (pre, switch(value))
-                    if callable(switch)
-                    else "%s %s%s%s" % (pre, switch, sep, value)
-                )
+                if callable(switch) and (x := switch(value)) is not None:
+                    ds.append("%s %s" % (pre, x))
+                else:
+                    ds.append("%s %s%s%s" % (pre, switch, sep, value))
             else:
                 ds.append("%s %s%s%s" % (pre, key, sep, value))
         return sorted(ds)
@@ -49,14 +53,14 @@ class JobScheduler(ABC):
     @staticmethod
     def get_scheduler(props: Mapping) -> JobScheduler:
         """
-        Returns a configured job scheduler.
+        Return a configured job scheduler.
 
         :param props: Configuration settings for job scheduler.
         :return: A configured job scheduler.
         :raises: UWConfigError if 'scheduler' is un- or mis-defined.
         """
         schedulers = {"slurm": Slurm, "pbs": PBS, "lsf": LSF}
-        if name := props.get("scheduler"):
+        if name := props.get(STR.scheduler):
             log.debug("Getting '%s' scheduler", name)
             if scheduler_class := schedulers.get(name):
                 return scheduler_class(props)  # type: ignore
@@ -67,7 +71,7 @@ class JobScheduler(ABC):
 
     def submit_job(self, runscript: Path, submit_file: Optional[Path] = None) -> bool:
         """
-        Submits a job to the scheduler.
+        Submit a job to the scheduler.
 
         :param runscript: Path to the runscript.
         :param submit_file: Path to file to write output of submit command to.
@@ -76,7 +80,7 @@ class JobScheduler(ABC):
         cmd = f"{self._submit_cmd} {runscript}"
         if submit_file:
             cmd += " 2>&1 | tee %s" % submit_file
-        success, _ = execute(cmd=cmd, cwd=f"{runscript.parent}")
+        success, _ = run_shell_cmd(cmd=cmd, cwd=f"{runscript.parent}")
         return success
 
     # Private methods
@@ -85,27 +89,34 @@ class JobScheduler(ABC):
     @abstractmethod
     def _directive_separator(self) -> str:
         """
-        Returns the character used to separate directive keys and values.
+        The character used to separate directive keys and values.
+        """
+
+    @property
+    @abstractmethod
+    def _forbidden_directives(self) -> list[str]:
+        """
+        The directives that this scheduler does not support.
         """
 
     @property
     @abstractmethod
     def _managed_directives(self) -> dict[str, Any]:
         """
-        Returns a mapping from canonical names to scheduler-specific CLI switches.
+        A mapping from canonical names to scheduler-specific CLI switches.
         """
 
     @property
     @abstractmethod
     def _prefix(self) -> str:
         """
-        Returns the scheduler's resource-request prefix.
+        The scheduler's resource-request prefix.
         """
 
     @property
     def _processed_props(self) -> dict[str, Any]:
         """
-        Pre-process directives before converting to runscript.
+        Pre-processed runscript directives.
         """
         return self._props
 
@@ -113,7 +124,7 @@ class JobScheduler(ABC):
     @abstractmethod
     def _submit_cmd(self) -> str:
         """
-        Returns the scheduler's job-submit executable name.
+        The scheduler's job-submit executable name.
         """
 
     def _validate_props(self) -> None:
@@ -138,14 +149,21 @@ class LSF(JobScheduler):
     @property
     def _directive_separator(self) -> str:
         """
-        Returns the character used to separate directive keys and values.
+        The character used to separate directive keys and values.
         """
         return " "
 
     @property
+    def _forbidden_directives(self) -> list[str]:
+        """
+        Directives that this scheduler does not support.
+        """
+        return []
+
+    @property
     def _managed_directives(self) -> dict[str, Any]:
         """
-        Returns a mapping from canonical names to scheduler-specific CLI switches.
+        A mapping from canonical names to scheduler-specific CLI switches.
         """
         return {
             _DirectivesOptional.JOB_NAME: "-J",
@@ -163,12 +181,15 @@ class LSF(JobScheduler):
     @property
     def _prefix(self) -> str:
         """
-        Returns the scheduler's resource-request prefix.
+        The scheduler's resource-request prefix.
         """
         return "#BSUB"
 
     @property
     def _processed_props(self) -> dict[str, Any]:
+        """
+        Pre-processed runscript directives.
+        """
         props = deepcopy(self._props)
         props[_DirectivesOptional.THREADS] = props.get(_DirectivesOptional.THREADS, 1)
         return props
@@ -176,7 +197,7 @@ class LSF(JobScheduler):
     @property
     def _submit_cmd(self) -> str:
         """
-        Returns the scheduler's job-submit executable name.
+        The scheduler's job-submit executable name.
         """
         return "bsub"
 
@@ -189,14 +210,21 @@ class PBS(JobScheduler):
     @property
     def _directive_separator(self) -> str:
         """
-        Returns the character used to separate directive keys and values.
+        The character used to separate directive keys and values.
         """
         return " "
 
     @property
+    def _forbidden_directives(self) -> list[str]:
+        """
+        Directives that this scheduler does not support.
+        """
+        return []
+
+    @property
     def _managed_directives(self) -> dict[str, Any]:
         """
-        Returns a mapping from canonical names to scheduler-specific CLI switches.
+        A mapping from canonical names to scheduler-specific CLI switches.
         """
         return {
             _DirectivesOptional.DEBUG: lambda x: f"-l debug={str(x).lower()}",
@@ -215,7 +243,7 @@ class PBS(JobScheduler):
     @staticmethod
     def _placement(items: dict[str, Any]) -> dict[str, Any]:
         """
-        Placement logic.
+        Return provided items with scheduler-specific replacements.
         """
         exclusive = items.get(_DirectivesOptional.EXCLUSIVE)
         placement = items.get(_DirectivesOptional.PLACEMENT)
@@ -233,12 +261,15 @@ class PBS(JobScheduler):
     @property
     def _prefix(self) -> str:
         """
-        Returns the scheduler's resource-request prefix.
+        The scheduler's resource-request prefix.
         """
         return "#PBS"
 
     @property
     def _processed_props(self) -> dict[str, Any]:
+        """
+        Pre-processed runscript directives.
+        """
         props = self._props
         props.update(self._select(props))
         props.update(self._placement(props))
@@ -253,7 +284,7 @@ class PBS(JobScheduler):
 
     def _select(self, items: dict[str, Any]) -> dict[str, Any]:
         """
-        Select logic.
+        Return provided items with scheduler-specific selections.
         """
         select = []
         if nodes := items.get(_DirectivesOptional.NODES):
@@ -274,7 +305,7 @@ class PBS(JobScheduler):
     @property
     def _submit_cmd(self) -> str:
         """
-        Returns the scheduler's job-submit executable name.
+        The scheduler's job-submit executable name.
         """
         return "qsub"
 
@@ -285,13 +316,21 @@ class Slurm(JobScheduler):
     """
 
     @property
+    def _forbidden_directives(self) -> list[str]:
+        """
+        Directives that this scheduler does not support.
+        """
+        return [_DirectivesOptional.SHELL]
+
+    @property
     def _managed_directives(self) -> dict[str, Any]:
         """
-        Returns a mapping from canonical names to scheduler-specific CLI switches.
+        A mapping from canonical names to scheduler-specific CLI switches.
         """
         return {
             _DirectivesOptional.CORES: "--ntasks",
-            _DirectivesOptional.EXCLUSIVE: lambda _: "--exclusive",
+            _DirectivesOptional.DEBUG: lambda b: "--verbose" if b else None,
+            _DirectivesOptional.EXCLUSIVE: lambda b: "--exclusive" if b else None,
             _DirectivesOptional.EXPORT: "--export",
             _DirectivesOptional.JOB_NAME: "--job-name",
             _DirectivesOptional.MEMORY: "--mem",
@@ -310,21 +349,21 @@ class Slurm(JobScheduler):
     @property
     def _directive_separator(self) -> str:
         """
-        Returns the character used to separate directive keys and values.
+        The character used to separate directive keys and values.
         """
         return "="
 
     @property
     def _prefix(self) -> str:
         """
-        Returns the scheduler's resource-request prefix.
+        The scheduler's resource-request prefix.
         """
         return "#SBATCH"
 
     @property
     def _submit_cmd(self) -> str:
         """
-        Returns the scheduler's job-submit executable name.
+        The scheduler's job-submit executable name.
         """
         return "sbatch"
 

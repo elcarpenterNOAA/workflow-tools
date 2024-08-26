@@ -1,6 +1,8 @@
 ``global_equiv_resol``
 ======================
 
+.. include:: /shared/idempotent.rst
+
 The ``uw`` mode for configuring and running the UFS Utils preprocessing component ``global_equiv_resol``. Documentation for this UFS Utils component is :ufs-utils:`here <global-equiv-resol>`.
 
 .. literalinclude:: global_equiv_resol/help.cmd
@@ -50,3 +52,11 @@ Its contents are described in section :ref:`global_equiv_resol_yaml`.
      $ uw global_equiv_resol run --config-file config.yaml --batch --dry-run
 
 .. include:: /shared/key_path.rst
+
+* Specifying the ``--show-schema`` flag, with no other options, prints the driver's schema:
+
+.. literalinclude:: global_equiv_resol/show-schema.cmd
+   :language: text
+   :emphasize-lines: 1
+.. literalinclude:: global_equiv_resol/show-schema.out
+   :language: text

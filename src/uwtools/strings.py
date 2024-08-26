@@ -38,14 +38,14 @@ class FORMAT:
     @staticmethod
     def extensions() -> list[str]:
         """
-        Returns recognized filename extensions.
+        Return recognized filename extensions.
         """
         return [FORMAT.ini, FORMAT.nml, FORMAT.sh, FORMAT.yaml]
 
     @staticmethod
     def formats() -> dict[str, str]:
         """
-        Returns the recognized format names.
+        Return the recognized format names.
         """
         return {
             field.name: str(getattr(FORMAT, field.name))
@@ -60,8 +60,12 @@ class STR:
     String lookup map.
     """
 
+    account: str = "account"
     action: str = "action"
+    basefile: str = "base_file"
     batch: str = "batch"
+    batchargs: str = "batchargs"
+    cdeps: str = "cdeps"
     cfgfile: str = "config_file"
     chgrescube: str = "chgres_cube"
     classname: str = "classname"
@@ -71,14 +75,18 @@ class STR:
     cycle: str = "cycle"
     dryrun: str = "dry_run"
     env: str = "env"
+    envcmds: str = "envcmds"
     esggrid: str = "esg_grid"
+    executable: str = "executable"
     execute: str = "execute"
+    execution: str = "execution"
     file1fmt: str = "file_1_format"
     file1path: str = "file_1_path"
     file2fmt: str = "file_2_format"
     file2path: str = "file_2_path"
     file: str = "file"
     filtertopo: str = "filter_topo"
+    fs: str = "fs"
     fv3: str = "fv3"
     globalequivresol: str = "global_equiv_resol"
     graphfile: str = "graph_file"
@@ -92,6 +100,7 @@ class STR:
     keyvalpairs: str = "key_eq_val_pairs"
     leadtime: str = "leadtime"
     link: str = "link"
+    makedirs: str = "makedirs"
     makehgrid: str = "make_hgrid"
     makesolomosaic: str = "make_solo_mosaic"
     mode: str = "mode"
@@ -99,28 +108,39 @@ class STR:
     module: str = "module"
     mpas: str = "mpas"
     mpasinit: str = "mpas_init"
+    mpiargs: str = "mpiargs"
+    mpicmd: str = "mpicmd"
+    namelist: str = "namelist"
     oroggsl: str = "orog_gsl"
     outfile: str = "output_file"
     outfmt: str = "output_format"
+    platform: str = "platform"
+    properties: str = "properties"
     quiet: str = "quiet"
     realize: str = "realize"
     render: str = "render"
     rocoto: str = "rocoto"
     run: str = "run"
+    rundir: str = "rundir"
+    scheduler: str = "scheduler"
     schemafile: str = "schema_file"
     schism: str = "schism"
     searchpath: str = "search_path"
     sfcclimogen: str = "sfc_climo_gen"
     shave: str = "shave"
+    showschema: str = "show_schema"
+    stdout: str = "stdout"
     targetdir: str = "target_dir"
     task: str = "task"
     tasks: str = "tasks"
     template: str = "template"
+    threads: str = "threads"
     total: str = "total"
     translate: str = "translate"
     ungrib: str = "ungrib"
     updatefile: str = "update_file"
     updatefmt: str = "update_format"
+    updatevalues: str = "update_values"
     upp: str = "upp"
     validate: str = "validate"
     valsfile: str = "values_file"

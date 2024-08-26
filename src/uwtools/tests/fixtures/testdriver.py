@@ -17,6 +17,6 @@ class TestDriver(AssetsCycleBased):
         yield asset(88, lambda: True)
         yield None
 
-    @property
-    def _driver_name(self):
+    @classmethod
+    def driver_name(cls):
         return "testdriver"

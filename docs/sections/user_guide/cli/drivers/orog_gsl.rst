@@ -1,6 +1,8 @@
 ``orog_gsl``
 ============
 
+.. include:: /shared/idempotent.rst
+
 The ``uw`` mode for configuring and running the UFS Utils preprocessing component ``orog_gsl``. Documentation for this UFS Utils component is :ufs-utils:`here <orog-gsl>`.
 
 .. literalinclude:: orog_gsl/help.cmd
@@ -50,3 +52,11 @@ Its contents are described in section :ref:`orog_gsl_yaml`.
      $ uw orog_gsl run --config-file config.yaml --batch --dry-run
 
 .. include:: /shared/key_path.rst
+
+* Specifying the ``--show-schema`` flag, with no other options, prints the driver's schema:
+
+.. literalinclude:: orog_gsl/show-schema.cmd
+   :language: text
+   :emphasize-lines: 1
+.. literalinclude:: orog_gsl/show-schema.out
+   :language: text

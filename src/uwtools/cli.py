@@ -18,7 +18,8 @@ from typing import Any, Callable, NoReturn, Optional
 import uwtools.api
 import uwtools.api.config
 import uwtools.api.driver
-import uwtools.api.file
+import uwtools.api.execute
+import uwtools.api.fs
 import uwtools.api.rocoto
 import uwtools.api.template
 import uwtools.config.jinja2
@@ -51,9 +52,9 @@ def main() -> None:
         setup_logging(quiet=True)
         args, checks = _parse_args(sys.argv[1:])
         args[STR.action] = args.get(STR.action, args[STR.mode])
-        for check in checks[args[STR.mode]][args[STR.action]]:
+        for check in checks[args[STR.mode]].get(args[STR.action], []):
             check(args)
-        setup_logging(quiet=args[STR.quiet], verbose=args[STR.verbose])
+        setup_logging(quiet=args.get(STR.quiet, False), verbose=args.get(STR.verbose, False))
     except UWError as e:
         _abort(str(e))
     try:
@@ -61,13 +62,14 @@ def main() -> None:
         tools: dict[str, Callable[..., bool]] = {
             STR.config: _dispatch_config,
             STR.execute: _dispatch_execute,
-            STR.file: _dispatch_file,
+            STR.fs: _dispatch_fs,
             STR.rocoto: _dispatch_rocoto,
             STR.template: _dispatch_template,
         }
         drivers: dict[str, Callable[..., bool]] = {
             x: partial(_dispatch_to_driver, x)
             for x in [
+                STR.cdeps,
                 STR.chgrescube,
                 STR.esggrid,
                 STR.filtertopo,
@@ -98,7 +100,7 @@ def main() -> None:
 
 def _add_subparser_config(subparsers: Subparsers) -> ModeChecks:
     """
-    Subparser for mode: config
+    Add subparser for mode: config
 
     :param subparsers: Parent parser's subparsers, to add this subparser to.
     """
@@ -114,7 +116,7 @@ def _add_subparser_config(subparsers: Subparsers) -> ModeChecks:
 
 def _add_subparser_config_compare(subparsers: Subparsers) -> ActionChecks:
     """
-    Subparser for mode: config compare
+    Add subparser for mode: config compare
 
     :param subparsers: Parent parser's subparsers, to add this subparser to.
     """
@@ -144,7 +146,7 @@ def _add_subparser_config_compare(subparsers: Subparsers) -> ActionChecks:
 
 def _add_subparser_config_realize(subparsers: Subparsers) -> ActionChecks:
     """
-    Subparser for mode: config realize
+    Add subparser for mode: config realize
 
     :param subparsers: Parent parser's subparsers, to add this subparser to.
     """
@@ -170,13 +172,13 @@ def _add_subparser_config_realize(subparsers: Subparsers) -> ActionChecks:
 
 def _add_subparser_config_validate(subparsers: Subparsers) -> ActionChecks:
     """
-    Subparser for mode: config validate
+    Add subparser for mode: config validate
 
     :param subparsers: Parent parser's subparsers, to add this subparser to.
     """
     parser = _add_subparser(subparsers, STR.validate, "Validate config")
     required = parser.add_argument_group(TITLE_REQ_ARG)
-    _add_arg_schema_file(required)
+    _add_arg_schema_file(required, required=True)
     optional = _basic_setup(parser)
     _add_arg_input_file(optional)
     return _add_args_verbosity(optional)
@@ -184,7 +186,7 @@ def _add_subparser_config_validate(subparsers: Subparsers) -> ActionChecks:
 
 def _dispatch_config(args: Args) -> bool:
     """
-    Dispatch logic for config mode.
+    Define dispatch logic for config mode.
 
     :param args: Parsed command-line args.
     """
@@ -198,7 +200,7 @@ def _dispatch_config(args: Args) -> bool:
 
 def _dispatch_config_compare(args: Args) -> bool:
     """
-    Dispatch logic for config compare action.
+    Define dispatch logic for config compare action.
 
     :param args: Parsed command-line args.
     """
@@ -212,7 +214,7 @@ def _dispatch_config_compare(args: Args) -> bool:
 
 def _dispatch_config_realize(args: Args) -> bool:
     """
-    Dispatch logic for config realize action.
+    Define dispatch logic for config realize action.
 
     :param args: Parsed command-line args.
     """
@@ -240,7 +242,7 @@ def _dispatch_config_realize(args: Args) -> bool:
 
 def _dispatch_config_validate(args: Args) -> bool:
     """
-    Dispatch logic for config validate action.
+    Define dispatch logic for config validate action.
 
     :param args: Parsed command-line args.
     """
@@ -256,7 +258,7 @@ def _dispatch_config_validate(args: Args) -> bool:
 
 def _add_subparser_execute(subparsers: Subparsers) -> ModeChecks:
     """
-    Subparser for mode: execute
+    Add subparser for mode: execute
 
     :param subparsers: Parent parser's subparsers, to add this subparser to.
     """
@@ -265,9 +267,9 @@ def _add_subparser_execute(subparsers: Subparsers) -> ModeChecks:
     _add_arg_module(required)
     _add_arg_classname(required)
     _add_arg_task(required)
-    _add_arg_schema_file(required)
     optional = _basic_setup(parser)
     _add_arg_config_file(optional)
+    _add_arg_schema_file(optional)
     _add_arg_cycle(optional)
     _add_arg_leadtime(optional)
     _add_arg_batch(optional)
@@ -283,11 +285,11 @@ def _add_subparser_execute(subparsers: Subparsers) -> ModeChecks:
 
 def _dispatch_execute(args: Args) -> bool:
     """
-    Dispatch logic for execute mode.
+    Define dispatch logic for execute mode.
 
     :param args: Parsed command-line args.
     """
-    return uwtools.api.driver.execute(
+    return uwtools.api.execute.execute(
         classname=args[STR.classname],
         module=args[STR.module],
         task=args[STR.task],
@@ -303,34 +305,34 @@ def _dispatch_execute(args: Args) -> bool:
     )
 
 
-# Mode file
+# Mode fs
 
 
-def _add_subparser_file(subparsers: Subparsers) -> ModeChecks:
+def _add_subparser_fs(subparsers: Subparsers) -> ModeChecks:
     """
-    Subparser for mode: file
+    Add subparser for mode: fs
 
     :param subparsers: Parent parser's subparsers, to add this subparser to.
     """
-    parser = _add_subparser(subparsers, STR.file, "Handle files")
+    parser = _add_subparser(subparsers, STR.fs, "Handle filesystem items (files and directories)")
     _basic_setup(parser)
     subparsers = _add_subparsers(parser, STR.action, STR.action.upper())
     return {
-        STR.copy: _add_subparser_file_copy(subparsers),
-        STR.link: _add_subparser_file_link(subparsers),
+        STR.copy: _add_subparser_fs_copy(subparsers),
+        STR.link: _add_subparser_fs_link(subparsers),
+        STR.makedirs: _add_subparser_fs_makedirs(subparsers),
     }
 
 
-def _add_subparser_file_common(parser: Parser) -> ActionChecks:
+def _add_subparser_fs_common(parser: Parser) -> ActionChecks:
     """
-    Common subparser code for mode: file {copy link}
+    Perform common subparser setup for mode: fs {copy link makedirs}
 
     :param parser: The parser to configure.
     """
-    required = parser.add_argument_group(TITLE_REQ_ARG)
-    _add_arg_target_dir(required, required=True)
     optional = _basic_setup(parser)
     _add_arg_config_file(optional)
+    _add_arg_target_dir(optional, helpmsg="Root directory for relative destination paths")
     _add_arg_cycle(optional)
     _add_arg_leadtime(optional)
     _add_arg_dry_run(optional)
@@ -339,46 +341,57 @@ def _add_subparser_file_common(parser: Parser) -> ActionChecks:
     return checks
 
 
-def _add_subparser_file_copy(subparsers: Subparsers) -> ActionChecks:
+def _add_subparser_fs_copy(subparsers: Subparsers) -> ActionChecks:
     """
-    Subparser for mode: file copy
+    Add subparser for mode: fs copy
 
     :param subparsers: Parent parser's subparsers, to add this subparser to.
     """
     parser = _add_subparser(subparsers, STR.copy, "Copy files")
-    return _add_subparser_file_common(parser)
+    return _add_subparser_fs_common(parser)
 
 
-def _add_subparser_file_link(subparsers: Subparsers) -> ActionChecks:
+def _add_subparser_fs_link(subparsers: Subparsers) -> ActionChecks:
     """
-    Subparser for mode: file link
+    Add subparser for mode: fs link
 
     :param subparsers: Parent parser's subparsers, to add this subparser to.
     """
     parser = _add_subparser(subparsers, STR.link, "Link files")
-    return _add_subparser_file_common(parser)
+    return _add_subparser_fs_common(parser)
 
 
-def _dispatch_file(args: Args) -> bool:
+def _add_subparser_fs_makedirs(subparsers: Subparsers) -> ActionChecks:
     """
-    Dispatch logic for file mode.
+    Add subparser for mode: fs makedirs
+
+    :param subparsers: Parent parser's subparsers, to add this subparser to.
+    """
+    parser = _add_subparser(subparsers, STR.makedirs, "Make directories")
+    return _add_subparser_fs_common(parser)
+
+
+def _dispatch_fs(args: Args) -> bool:
+    """
+    Define dispatch logic for fs mode.
 
     :param args: Parsed command-line args.
     """
     actions = {
-        STR.copy: _dispatch_file_copy,
-        STR.link: _dispatch_file_link,
+        STR.copy: _dispatch_fs_copy,
+        STR.link: _dispatch_fs_link,
+        STR.makedirs: _dispatch_fs_makedirs,
     }
     return actions[args[STR.action]](args)
 
 
-def _dispatch_file_copy(args: Args) -> bool:
+def _dispatch_fs_copy(args: Args) -> bool:
     """
-    Dispatch logic for file copy action.
+    Define dispatch logic for fs copy action.
 
     :param args: Parsed command-line args.
     """
-    return uwtools.api.file.copy(
+    return uwtools.api.fs.copy(
         target_dir=args[STR.targetdir],
         config=args[STR.cfgfile],
         cycle=args[STR.cycle],
@@ -389,13 +402,30 @@ def _dispatch_file_copy(args: Args) -> bool:
     )
 
 
-def _dispatch_file_link(args: Args) -> bool:
+def _dispatch_fs_link(args: Args) -> bool:
     """
-    Dispatch logic for file link action.
+    Define dispatch logic for fs link action.
 
     :param args: Parsed command-line args.
     """
-    return uwtools.api.file.link(
+    return uwtools.api.fs.link(
+        target_dir=args[STR.targetdir],
+        config=args[STR.cfgfile],
+        cycle=args[STR.cycle],
+        leadtime=args[STR.leadtime],
+        keys=args[STR.keys],
+        dry_run=args[STR.dryrun],
+        stdin_ok=True,
+    )
+
+
+def _dispatch_fs_makedirs(args: Args) -> bool:
+    """
+    Define dispatch logic for fs makedirs action.
+
+    :param args: Parsed command-line args.
+    """
+    return uwtools.api.fs.makedirs(
         target_dir=args[STR.targetdir],
         config=args[STR.cfgfile],
         cycle=args[STR.cycle],
@@ -411,7 +441,7 @@ def _dispatch_file_link(args: Args) -> bool:
 
 def _add_subparser_rocoto(subparsers: Subparsers) -> ModeChecks:
     """
-    Subparser for mode: rocoto
+    Add subparser for mode: rocoto
 
     :param subparsers: Parent parser's subparsers, to add this subparser to.
     """
@@ -426,7 +456,7 @@ def _add_subparser_rocoto(subparsers: Subparsers) -> ModeChecks:
 
 def _add_subparser_rocoto_realize(subparsers: Subparsers) -> ActionChecks:
     """
-    Subparser for mode: rocoto realize
+    Add subparser for mode: rocoto realize
 
     :param subparsers: Parent parser's subparsers, to add this subparser to.
     """
@@ -440,7 +470,7 @@ def _add_subparser_rocoto_realize(subparsers: Subparsers) -> ActionChecks:
 
 def _add_subparser_rocoto_validate(subparsers: Subparsers) -> ActionChecks:
     """
-    Subparser for mode: rocoto validate
+    Add subparser for mode: rocoto validate
 
     :param subparsers: Parent parser's subparsers, to add this subparser to.
     """
@@ -453,7 +483,7 @@ def _add_subparser_rocoto_validate(subparsers: Subparsers) -> ActionChecks:
 
 def _dispatch_rocoto(args: Args) -> bool:
     """
-    Dispatch logic for rocoto mode.
+    Define dispatch logic for rocoto mode.
 
     :param args: Parsed command-line args.
     """
@@ -466,7 +496,7 @@ def _dispatch_rocoto(args: Args) -> bool:
 
 def _dispatch_rocoto_realize(args: Args) -> bool:
     """
-    Dispatch logic for rocoto realize action. Validate input and output.
+    Define dispatch logic for rocoto realize action. Validate input and output.
 
     :param args: Parsed command-line args.
     """
@@ -479,7 +509,7 @@ def _dispatch_rocoto_realize(args: Args) -> bool:
 
 def _dispatch_rocoto_validate(args: Args) -> bool:
     """
-    Dispatch logic for rocoto validate action.
+    Define dispatch logic for rocoto validate action.
 
     :param args: Parsed command-line args.
     """
@@ -491,7 +521,7 @@ def _dispatch_rocoto_validate(args: Args) -> bool:
 
 def _add_subparser_template(subparsers: Subparsers) -> ModeChecks:
     """
-    Subparser for mode: template
+    Add subparser for mode: template
 
     :param subparsers: Parent parser's subparsers, to add this subparser to.
     """
@@ -506,7 +536,7 @@ def _add_subparser_template(subparsers: Subparsers) -> ModeChecks:
 
 def _add_subparser_template_translate(subparsers: Subparsers) -> ActionChecks:
     """
-    Subparser for mode: template translate
+    Add subparser for mode: template translate
 
     :param subparsers: Parent parser's subparsers, to add this subparser to.
     """
@@ -520,7 +550,7 @@ def _add_subparser_template_translate(subparsers: Subparsers) -> ActionChecks:
 
 def _add_subparser_template_render(subparsers: Subparsers) -> ActionChecks:
     """
-    Subparser for mode: template render
+    Add subparser for mode: template render
 
     :param subparsers: Parent parser's subparsers, to add this subparser to.
     """
@@ -541,7 +571,7 @@ def _add_subparser_template_render(subparsers: Subparsers) -> ActionChecks:
 
 def _dispatch_template(args: Args) -> bool:
     """
-    Dispatch logic for template mode.
+    Define dispatch logic for template mode.
 
     :param args: Parsed command-line args.
     """
@@ -554,7 +584,7 @@ def _dispatch_template(args: Args) -> bool:
 
 def _dispatch_template_render(args: Args) -> bool:
     """
-    Dispatch logic for template render action.
+    Define dispatch logic for template render action.
 
     :param args: Parsed command-line args.
     """
@@ -581,7 +611,7 @@ def _dispatch_template_render(args: Args) -> bool:
 
 def _dispatch_template_translate(args: Args) -> bool:
     """
-    Dispatch logic for template translate action.
+    Define dispatch logic for template translate action.
 
     :param args: Parsed command-line args.
     """
@@ -594,8 +624,6 @@ def _dispatch_template_translate(args: Args) -> bool:
 
 
 # Arguments
-
-# pylint: disable=missing-function-docstring
 
 
 def _add_arg_batch(group: Group) -> None:
@@ -782,12 +810,12 @@ def _add_arg_quiet(group: Group) -> None:
     )
 
 
-def _add_arg_schema_file(group: Group) -> None:
+def _add_arg_schema_file(group: Group, required: bool = False) -> None:
     group.add_argument(
         _switch(STR.schemafile),
         help="Path to schema file to use for validation",
         metavar="PATH",
-        required=True,
+        required=required,
         type=Path,
     )
 
@@ -802,10 +830,20 @@ def _add_arg_search_path(group: Group) -> None:
     )
 
 
-def _add_arg_target_dir(group: Group, required: bool) -> None:
+def _add_arg_show_schema(group: Group) -> None:
+    group.add_argument(
+        _switch(STR.showschema),
+        action="store_true",
+        help="Show driver schema and exit",
+    )
+
+
+def _add_arg_target_dir(
+    group: Group, required: bool = False, helpmsg: Optional[str] = None
+) -> None:
     group.add_argument(
         _switch(STR.targetdir),
-        help="Path to target directory",
+        help=helpmsg or "Path to target directory",
         metavar="PATH",
         required=required,
         type=Path,
@@ -933,22 +971,27 @@ def _add_subparser(subparsers: Subparsers, name: str, helpmsg: str) -> Parser:
 def _add_subparser_for_driver(
     name: str,
     subparsers: Subparsers,
+    with_batch: Optional[bool] = False,
     with_cycle: Optional[bool] = False,
     with_leadtime: Optional[bool] = False,
 ) -> ModeChecks:
     """
-    Subparser for a driver mode.
+    Add subparser for a standalone-driver mode.
 
     :param name: Name of the driver whose subparser to configure.
     :param subparsers: Parent parser's subparsers, to add this subparser to.
+    :param with_batch: Does this driver accept a batch argument?
     :param with_cycle: Does this driver require a cycle?
     :param with_leadtime: Does this driver require a leadtime?
     """
     parser = _add_subparser(subparsers, name, "Execute %s tasks" % name)
-    _basic_setup(parser)
-    subparsers = _add_subparsers(parser, STR.action, STR.task.upper())
+    optional = _basic_setup(parser)
+    _add_arg_show_schema(optional)
+    subparsers = _add_subparsers(parser, STR.action, STR.task.upper(), required=False)
     return {
-        task: _add_subparser_for_driver_task(subparsers, task, helpmsg, with_cycle, with_leadtime)
+        task: _add_subparser_for_driver_task(
+            subparsers, task, helpmsg, with_batch, with_cycle, with_leadtime
+        )
         for task, helpmsg in import_module("uwtools.api.%s" % name).tasks().items()
     }
 
@@ -957,15 +1000,17 @@ def _add_subparser_for_driver_task(
     subparsers: Subparsers,
     task: str,
     helpmsg: str,
+    with_batch: Optional[bool] = False,
     with_cycle: Optional[bool] = False,
     with_leadtime: Optional[bool] = False,
 ) -> ActionChecks:
     """
-    Subparser for a driver action.
+    Add subparser for a driver action.
 
     :param subparsers: Parent parser's subparsers, to add this subparser to.
     :param task: The task to add a subparser for.
     :param helpmsg: Help message for task.
+    :param with_batch: Does this driver accept a batch argument?
     :param with_cycle: Does this driver require a cycle?
     :param with_leadtime: Does this driver require a leadtime?
     """
@@ -977,7 +1022,8 @@ def _add_subparser_for_driver_task(
         _add_arg_leadtime(required, required=True)
     optional = _basic_setup(parser)
     _add_arg_config_file(optional)
-    _add_arg_batch(optional)
+    if with_batch:
+        _add_arg_batch(optional)
     _add_arg_dry_run(optional)
     _add_arg_graph_file(optional)
     _add_arg_key_path(
@@ -989,7 +1035,7 @@ def _add_subparser_for_driver_task(
     return checks
 
 
-def _add_subparsers(parser: Parser, dest: str, metavar: str) -> Subparsers:
+def _add_subparsers(parser: Parser, dest: str, metavar: str, required: bool = True) -> Subparsers:
     """
     Add subparsers to a parser.
 
@@ -999,7 +1045,7 @@ def _add_subparsers(parser: Parser, dest: str, metavar: str) -> Subparsers:
     :return: The new subparsers object.
     """
     return parser.add_subparsers(
-        dest=dest, metavar=metavar, required=True, title="Positional arguments"
+        dest=dest, metavar=metavar, required=required, title="Positional arguments"
     )
 
 
@@ -1015,7 +1061,7 @@ def _basic_setup(parser: Parser) -> Group:
         _switch(STR.version),
         action=STR.version,
         help="Show version info and exit",
-        version=f"%(prog)s {_version()}",
+        version=f"{Path(sys.argv[0]).name} {_version()}",
     )
     return optional
 
@@ -1064,12 +1110,18 @@ def _dict_from_key_eq_val_strings(config_items: list[str]) -> dict[str, str]:
 
 def _dispatch_to_driver(name: str, args: Args) -> bool:
     """
-    Dispatch logic for a driver mode.
+    Define dispatch logic for a driver mode.
 
     :param name: Name of the driver to dispatch to.
     :param args: Parsed command-line args.
     """
-    execute: Callable[..., bool] = import_module("uwtools.api.%s" % name).execute
+    module = import_module("uwtools.api.%s" % name)
+    if args.get(STR.showschema):
+        print(json.dumps(module.schema(), sort_keys=True, indent=2))
+        return True
+    if not args.get(STR.action):
+        _abort("No %s specified" % STR.task.upper())
+    execute: Callable[..., bool] = module.execute
     kwargs = {
         "task": args[STR.action],
         "config": args[STR.cfgfile],
@@ -1086,7 +1138,7 @@ def _dispatch_to_driver(name: str, args: Args) -> bool:
 
 def _formatter(prog: str) -> HelpFormatter:
     """
-    A standard formatter for help messages.
+    Return a standard formatter for help messages.
     """
     # max_help_positions sets the maximum starting column for option help text.
     return HelpFormatter(prog, max_help_position=6)
@@ -1107,12 +1159,29 @@ def _parse_args(raw_args: list[str]) -> tuple[Args, Checks]:
     tools = {
         STR.config: partial(_add_subparser_config, subparsers),
         STR.execute: partial(_add_subparser_execute, subparsers),
-        STR.file: partial(_add_subparser_file, subparsers),
+        STR.fs: partial(_add_subparser_fs, subparsers),
         STR.rocoto: partial(_add_subparser_rocoto, subparsers),
         STR.template: partial(_add_subparser_template, subparsers),
     }
-    drivers = {
+    no_components: list[str] = []
+    assets = {
         component: partial(_add_subparser_for_driver, component, subparsers)
+        for component in no_components
+    }
+    assets_with_cycle = {
+        component: partial(_add_subparser_for_driver, component, subparsers, with_cycle=True)
+        for component in [
+            STR.cdeps,
+        ]
+    }
+    assets_with_cycle_and_leadtime = {
+        component: partial(
+            _add_subparser_for_driver, component, subparsers, with_cycle=True, with_leadtime=True
+        )
+        for component in no_components
+    }
+    drivers = {
+        component: partial(_add_subparser_for_driver, component, subparsers, with_batch=True)
         for component in [
             STR.esggrid,
             STR.filtertopo,
@@ -1125,7 +1194,9 @@ def _parse_args(raw_args: list[str]) -> tuple[Args, Checks]:
         ]
     }
     drivers_with_cycle = {
-        component: partial(_add_subparser_for_driver, component, subparsers, with_cycle=True)
+        component: partial(
+            _add_subparser_for_driver, component, subparsers, with_batch=True, with_cycle=True
+        )
         for component in [
             STR.chgrescube,
             STR.fv3,
@@ -1138,13 +1209,26 @@ def _parse_args(raw_args: list[str]) -> tuple[Args, Checks]:
     }
     drivers_with_cycle_and_leadtime = {
         component: partial(
-            _add_subparser_for_driver, component, subparsers, with_cycle=True, with_leadtime=True
+            _add_subparser_for_driver,
+            component,
+            subparsers,
+            with_batch=True,
+            with_cycle=True,
+            with_leadtime=True,
         )
         for component in [
             STR.upp,
         ]
     }
-    modes = {**tools, **drivers, **drivers_with_cycle, **drivers_with_cycle_and_leadtime}
+    modes = {
+        **tools,
+        **assets,
+        **assets_with_cycle,
+        **assets_with_cycle_and_leadtime,
+        **drivers,
+        **drivers_with_cycle,
+        **drivers_with_cycle_and_leadtime,
+    }
     checks = {k: modes[k]() for k in sorted(modes.keys())}
     return vars(parser.parse_args(raw_args)), checks
 

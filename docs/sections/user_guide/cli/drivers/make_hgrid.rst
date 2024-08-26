@@ -1,6 +1,8 @@
 ``make_hgrid``
 ==============
 
+.. include:: /shared/idempotent.rst
+
 The ``uw`` mode for configuring and running the UFS Utils preprocessing component ``make_hgrid``. Documentation for this UFS Utils component is :ufs-utils:`here <make-hgrid>`.
 
 .. literalinclude:: make_hgrid/help.cmd
@@ -58,3 +60,11 @@ Its contents are described in section :ref:`make_hgrid_yaml`.
      $ uw make_hgrid run --config-file config.yaml --batch --dry-run
 
 .. include:: /shared/key_path.rst
+
+* Specifying the ``--show-schema`` flag, with no other options, prints the driver's schema:
+
+.. literalinclude:: make_hgrid/show-schema.cmd
+   :language: text
+   :emphasize-lines: 1
+.. literalinclude:: make_hgrid/show-schema.out
+   :language: text

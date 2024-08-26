@@ -54,6 +54,10 @@ class ConcreteScheduler(scheduler.JobScheduler):
         return directive_separator
 
     @property
+    def _forbidden_directives(self) -> list[str]:
+        return ["shell"]
+
+    @property
     def _managed_directives(self) -> dict[str, Any]:
         return managed_directives
 
@@ -74,29 +78,36 @@ def test_JobScheduler_directives(schedulerobj):
     assert schedulerobj.directives == ["#DIR --a=foo", "#DIR --pi=3.14", "#DIR --t=01:10:00"]
 
 
-def test_JobScheduler_get_scheduler_bad_scheduler_specified():
+def test_JobScheduler_get_scheduler_fail_bad_directive_specified(props):
+    scheduler = ConcreteScheduler.get_scheduler(props={**props, "shell": "csh"})
+    with raises(UWConfigError) as e:
+        assert scheduler.directives
+    assert str(e.value).startswith("Directive 'shell' invalid for scheduler 'slurm'")
+
+
+def test_JobScheduler_get_scheduler_fail_bad_scheduler_specified():
     with raises(UWConfigError) as e:
         ConcreteScheduler.get_scheduler(props={"scheduler": "foo"})
     assert str(e.value).startswith("Scheduler 'foo' should be one of:")
 
 
-def test_JobScheduler_get_scheduler_no_scheduler_specified():
+def test_JobScheduler_get_scheduler_fail_no_scheduler_specified():
     with raises(UWConfigError) as e:
         ConcreteScheduler.get_scheduler(props={})
     assert str(e.value).startswith("No 'scheduler' defined in")
 
 
-def test_JobScheduler_get_scheduler_ok(props):
+def test_JobScheduler_get_scheduler_pass(props):
     assert isinstance(ConcreteScheduler.get_scheduler(props=props), scheduler.Slurm)
 
 
 def test_JobScheduler_submit_job(schedulerobj, tmp_path):
     runscript = tmp_path / "runscript"
     submit_file = tmp_path / "runscript.submit"
-    with patch.object(scheduler, "execute") as execute:
-        execute.return_value = (True, None)
+    with patch.object(scheduler, "run_shell_cmd") as run_shell_cmd:
+        run_shell_cmd.return_value = (True, None)
         assert schedulerobj.submit_job(runscript=runscript, submit_file=submit_file) is True
-        execute.assert_called_once_with(
+        run_shell_cmd.assert_called_once_with(
             cmd=f"sub {runscript} 2>&1 | tee {submit_file}", cwd=str(tmp_path)
         )
 
@@ -141,6 +152,10 @@ def test_LSF__directive_separator(lsf):
     assert lsf._directive_separator == " "
 
 
+def test_LSF__forbidden_directives(lsf):
+    assert lsf._forbidden_directives == []
+
+
 def test_LSF__managed_directives(lsf):
     mds = lsf._managed_directives
     assert mds["account"] == "-P"
@@ -173,6 +188,10 @@ def test_PBS(pbs):
 
 def test_PBS__directive_separator(pbs):
     assert pbs._directive_separator == " "
+
+
+def test_PBS__forbidden_directives(pbs):
+    assert pbs._forbidden_directives == []
 
 
 def test_PBS__managed_directives(pbs):
@@ -225,10 +244,17 @@ def test_Slurm__directive_separator(slurm):
     assert slurm._directive_separator == "="
 
 
+def test_Slurm__forbidden_directives(slurm):
+    assert slurm._forbidden_directives == ["shell"]
+
+
 def test_Slurm__managed_directives(slurm):
     mds = slurm._managed_directives
     assert mds["cores"] == "--ntasks"
-    assert mds["exclusive"](None) == "--exclusive"
+    assert mds["debug"](True) == "--verbose"
+    assert mds["debug"](False) is None
+    assert mds["exclusive"](True) == "--exclusive"
+    assert mds["exclusive"](False) is None
     assert mds["export"] == "--export"
     assert mds["jobname"] == "--job-name"
     assert mds["memory"] == "--mem"

@@ -1,6 +1,8 @@
 ``filter_topo``
 ===============
 
+.. include:: /shared/idempotent.rst
+
 The ``uw`` mode for configuring and running the UFS Utils preprocessing component ``filter_topo``. Documentation for this UFS Utils component is :ufs-utils:`here <filter-topo>`.
 
 .. literalinclude:: filter_topo/help.cmd
@@ -50,3 +52,11 @@ Its contents are described in section :ref:`filter_topo_yaml`.
      $ uw filter_topo run --config-file config.yaml --batch --dry-run
 
 .. include:: /shared/key_path.rst
+
+* Specifying the ``--show-schema`` flag, with no other options, prints the driver's schema:
+
+.. literalinclude:: filter_topo/show-schema.cmd
+   :language: text
+   :emphasize-lines: 1
+.. literalinclude:: filter_topo/show-schema.out
+   :language: text

@@ -6,18 +6,19 @@ import os
 from pathlib import Path
 from typing import Optional, Union
 
-from uwtools.config.formats.fieldtable import FieldTableConfig as _FieldTableConfig
-from uwtools.config.formats.ini import INIConfig as _INIConfig
-from uwtools.config.formats.nml import NMLConfig as _NMLConfig
-from uwtools.config.formats.sh import SHConfig as _SHConfig
-from uwtools.config.formats.yaml import Config as _Config
-from uwtools.config.formats.yaml import YAMLConfig as _YAMLConfig
+from uwtools.config.formats.base import Config as _Config
+from uwtools.config.formats.fieldtable import FieldTableConfig
+from uwtools.config.formats.ini import INIConfig
+from uwtools.config.formats.nml import NMLConfig
+from uwtools.config.formats.sh import SHConfig
+from uwtools.config.formats.yaml import YAMLConfig
 from uwtools.config.tools import compare_configs as _compare
 from uwtools.config.tools import realize_config as _realize
 from uwtools.config.validator import validate_external as _validate_external
+from uwtools.exceptions import UWConfigError
 from uwtools.utils.api import ensure_data_source as _ensure_data_source
-from uwtools.utils.api import str2path as _str2path
 from uwtools.utils.file import FORMAT as _FORMAT
+from uwtools.utils.file import str2path as _str2path
 
 # Public
 
@@ -41,75 +42,71 @@ def compare(
 
 def get_fieldtable_config(
     config: Union[dict, Optional[Union[Path, str]]] = None, stdin_ok=False
-) -> _FieldTableConfig:
+) -> FieldTableConfig:
     """
     Get a ``FieldTableConfig`` object.
 
-    :param config: FieldTable file to load (``None`` or unspecified => read ``stdin``), or initial
-        ``dict``
+    :param config: FieldTable file (``None`` => read ``stdin``), or initial ``dict``.
     :param stdin_ok: OK to read from ``stdin``?
-    :return: An initialized ``FieldTableConfig`` object
+    :return: An initialized ``FieldTableConfig`` object.
     """
-    return _FieldTableConfig(config=_ensure_data_source(_str2path(config), stdin_ok))
+    return FieldTableConfig(config=_ensure_data_source(_str2path(config), stdin_ok))
 
 
 def get_ini_config(
     config: Union[dict, Optional[Union[Path, str]]] = None,
     stdin_ok: bool = False,
-) -> _INIConfig:
+) -> INIConfig:
     """
     Get an ``INIConfig`` object.
 
-    :param config: INI file to load (``None`` or unspecified => read ``stdin``), or initial ``dict``
+    :param config: INI file or ``dict`` (``None`` => read ``stdin``).
     :param stdin_ok: OK to read from ``stdin``?
-    :return: An initialized ``INIConfig`` object
+    :return: An initialized ``INIConfig`` object.
     """
-    return _INIConfig(config=_ensure_data_source(_str2path(config), stdin_ok))
+    return INIConfig(config=_ensure_data_source(_str2path(config), stdin_ok))
 
 
 def get_nml_config(
     config: Union[dict, Optional[Union[Path, str]]] = None,
     stdin_ok: bool = False,
-) -> _NMLConfig:
+) -> NMLConfig:
     """
     Get an ``NMLConfig`` object.
 
-    :param config: Fortran namelist file to load (``None`` or unspecified => read ``stdin``), or
-        initial ``dict``
+    :param config: Namelist file of ``dict`` (``None`` => read ``stdin``).
     :param stdin_ok: OK to read from ``stdin``?
-    :return: An initialized ``NMLConfig`` object
+    :return: An initialized ``NMLConfig`` object.
     """
-    return _NMLConfig(config=_ensure_data_source(_str2path(config), stdin_ok))
+    return NMLConfig(config=_ensure_data_source(_str2path(config), stdin_ok))
 
 
 def get_sh_config(
     config: Union[dict, Optional[Union[Path, str]]] = None,
     stdin_ok: bool = False,
-) -> _SHConfig:
+) -> SHConfig:
     """
     Get an ``SHConfig`` object.
 
-    :param config: File of shell 'key=value' pairs to load (``None`` or unspecified => read
-        ``stdin``), or initial ``dict``
+    :param config: Shell key=value pairs file or ``dict`` (``None`` => read ``stdin``).
     :param stdin_ok: OK to read from ``stdin``?
-    :return: An initialized ``SHConfig`` object
+    :return: An initialized ``SHConfig`` object.
     """
-    return _SHConfig(config=_ensure_data_source(_str2path(config), stdin_ok))
+    return SHConfig(config=_ensure_data_source(_str2path(config), stdin_ok))
 
 
 def get_yaml_config(
     config: Union[dict, Optional[Union[Path, str]]] = None,
     stdin_ok: bool = False,
-) -> _YAMLConfig:
+) -> YAMLConfig:
     """
     Get a ``YAMLConfig`` object.
 
-    :param config: YAML file to load (``None`` or unspecified => read ``stdin``), or initial
-        ``dict``
+    :param config: YAML file or ``dict`` (``None`` => read ``stdin``).
     :param stdin_ok: OK to read from ``stdin``?
-    :return: An initialized ``YAMLConfig`` object
+    :return: An initialized ``YAMLConfig`` object.
     """
-    return _YAMLConfig(config=_ensure_data_source(_str2path(config), stdin_ok))
+    return YAMLConfig(config=_ensure_data_source(_str2path(config), stdin_ok))
 
 
 def realize(
@@ -128,10 +125,12 @@ def realize(
     """
     NB: This docstring is dynamically replaced: See realize.__doc__ definition below.
     """
+    if update_config is None and update_format is not None:  # i.e. updates will be read from stdin
+        update_config = _ensure_data_source(update_config, stdin_ok)
     return _realize(
         input_config=_ensure_data_source(_str2path(input_config), stdin_ok),
         input_format=input_format,
-        update_config=_ensure_data_source(_str2path(update_config), stdin_ok),
+        update_config=_str2path(update_config),
         update_format=update_format,
         output_file=_str2path(output_file),
         output_format=output_format,
@@ -163,7 +162,7 @@ def realize_to_dict(  # pylint: disable=unused-argument
 
 def validate(
     schema_file: Union[Path, str],
-    config: Optional[Union[dict, _YAMLConfig, Path, str]] = None,
+    config: Optional[Union[dict, YAMLConfig, Path, str]] = None,
     stdin_ok: bool = False,
 ) -> bool:
     """
@@ -172,14 +171,19 @@ def validate(
     If no config is specified, ``stdin`` is read and will be parsed as YAML and then validated. A
     ``dict`` or a YAMLConfig instance may also be provided for validation.
 
-    :param schema_file: The JSON Schema file to use for validation
-    :param config: The config to validate
+    :param schema_file: The JSON Schema file to use for validation.
+    :param config: The config to validate.
     :param stdin_ok: OK to read from ``stdin``?
-    :return: ``True`` if the YAML file conforms to the schema, ``False`` otherwise
+    :return: ``True`` if the YAML file conforms to the schema, ``False`` otherwise.
     """
-    return _validate_external(
-        schema_file=_str2path(schema_file), config=_ensure_data_source(_str2path(config), stdin_ok)
-    )
+    try:
+        _validate_external(
+            schema_file=_str2path(schema_file),
+            config=_ensure_data_source(_str2path(config), stdin_ok),
+        )
+    except UWConfigError:
+        return False
+    return True
 
 
 # Import-time code
@@ -193,11 +197,11 @@ Compare two config files.
 
 Recognized file extensions are: {extensions}
 
-:param config_1_path: Path to 1st config file
-:param config_2_path: Path to 2nd config file
-:param config_1_format: Format of 1st config file (optional if file's extension is recognized)
-:param config_2_format: Format of 2nd config file (optional if file's extension is recognized)
-:return: ``False`` if config files had differences, otherwise ``True``
+:param config_1_path: Path to 1st config file.
+:param config_2_path: Path to 2nd config file.
+:param config_1_format: Format of 1st config file (optional if file's extension is recognized).
+:param config_2_format: Format of 2nd config file (optional if file's extension is recognized).
+:return: ``False`` if config files had differences, otherwise ``True``.
 """.format(
     extensions=", ".join(_FORMAT.extensions())
 ).strip()
@@ -228,19 +232,36 @@ rendered. Otherwise, such variables/expressions will be passed through unchanged
 
 Recognized file extensions are: {extensions}
 
-:param input_config: Input config file (``None`` or unspecified => read ``stdin``)
-:param input_format: Format of the input config (optional if file's extension is recognized)
-:param update_config: Update config file (``None`` or unspecified => read ``stdin``)
-:param update_format: Format of the update config (optional if file's extension is recognized)
-:param output_file: Output config file (``None`` or unspecified => write to ``stdout``)
-:param output_format: Format of the output config (optional if file's extension is recognized)
-:param key_path: Path through keys to the desired output block
-:param values_needed: Report complete, missing, and template values
-:param total: Require rendering of all Jinja2 variables/expressions
-:param dry_run: Log output instead of writing to output
+:param input_config: Input config file (``None`` => read ``stdin``).
+:param input_format: Format of the input config (optional if file's extension is recognized).
+:param update_config: Update config file (``None`` => read ``stdin``).
+:param update_format: Format of the update config (optional if file's extension is recognized).
+:param output_file: Output config file (``None`` => write to ``stdout``).
+:param output_format: Format of the output config (optional if file's extension is recognized).
+:param key_path: Path through keys to the desired output block.
+:param values_needed: Report complete, missing, and template values.
+:param total: Require rendering of all Jinja2 variables/expressions.
+:param dry_run: Log output instead of writing to output.
 :param stdin_ok: OK to read from ``stdin``?
-:return: The ``dict`` representation of the realized config
-:raises: UWConfigRealizeError if ``total`` is ``True`` and any Jinja2 variable/expression was not rendered
+:return: The ``dict`` representation of the realized config.
+:raises: UWConfigRealizeError if ``total`` is ``True`` and any Jinja2 variable/expression was not rendered.
 """.format(
     extensions=", ".join(_FORMAT.extensions())
 ).strip()
+
+__all__ = [
+    "FieldTableConfig",
+    "INIConfig",
+    "NMLConfig",
+    "SHConfig",
+    "YAMLConfig",
+    "compare",
+    "get_fieldtable_config",
+    "get_ini_config",
+    "get_nml_config",
+    "get_sh_config",
+    "get_yaml_config",
+    "realize",
+    "realize_to_dict",
+    "validate",
+]

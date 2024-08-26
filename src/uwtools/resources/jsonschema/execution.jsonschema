@@ -2,16 +2,7 @@
   "additionalProperties": false,
   "properties": {
     "batchargs": {
-      "additionalProperties": true,
-      "properties": {
-        "walltime": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "walltime"
-      ],
-      "type": "object"
+      "$ref": "urn:uwtools:batchargs"
     },
     "envcmds": {
       "items": {
@@ -32,7 +23,7 @@
       "type": "string"
     },
     "threads": {
-      "minimum": 0,
+      "minimum": 1,
       "type": "integer"
     }
   },

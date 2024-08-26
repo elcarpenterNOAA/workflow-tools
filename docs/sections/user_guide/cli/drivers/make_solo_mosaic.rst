@@ -1,6 +1,8 @@
 ``make_solo_mosaic``
 ====================
 
+.. include:: /shared/idempotent.rst
+
 The ``uw`` mode for configuring and running the UFS Utils preprocessing component ``make_solo_mosaic``. Documentation for this UFS Utils component is :ufs-utils:`here <make-solo-mosaic>`.
 
 .. literalinclude:: make_solo_mosaic/help.cmd
@@ -59,3 +61,11 @@ Its contents are described in section :ref:`make_solo_mosaic_yaml`.
      $ uw make_solo_mosaic run --config-file config.yaml --batch --dry-run
 
 .. include:: /shared/key_path.rst
+
+* Specifying the ``--show-schema`` flag, with no other options, prints the driver's schema:
+
+.. literalinclude:: make_solo_mosaic/show-schema.cmd
+   :language: text
+   :emphasize-lines: 1
+.. literalinclude:: make_solo_mosaic/show-schema.out
+   :language: text

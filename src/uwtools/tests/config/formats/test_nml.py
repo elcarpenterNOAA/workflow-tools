@@ -1,15 +1,15 @@
-# pylint: disable=missing-function-docstring,redefined-outer-name
+# pylint: disable=missing-function-docstring,protected-access,redefined-outer-name
 """
 Tests for uwtools.config.formats.nml module.
 """
 
 import filecmp
+from textwrap import dedent
 
 import f90nml  # type: ignore
-from pytest import fixture, mark, raises
+from pytest import fixture, mark
 
 from uwtools.config.formats.nml import NMLConfig
-from uwtools.exceptions import UWConfigError
 from uwtools.tests.support import fixture_path
 from uwtools.utils.file import FORMAT
 
@@ -24,6 +24,58 @@ def data():
 # Tests
 
 
+def test_nml__get_depth_threshold():
+    assert NMLConfig._get_depth_threshold() is None
+
+
+def test_nml__get_format():
+    assert NMLConfig._get_format() == FORMAT.nml
+
+
+def test_nml__parse_include():
+    """
+    Test that non-YAML handles include tags properly.
+    """
+    cfgobj = NMLConfig(fixture_path("include_files.nml"))
+    assert cfgobj["config"]["fruit"] == "papaya"
+    assert cfgobj["config"]["how_many"] == 17
+    assert cfgobj["config"]["meat"] == "beef"
+    assert len(cfgobj["config"]) == 5
+
+
+def test_nml__parse_include_mult_sect():
+    """
+    Test that non-YAML handles include tags with files that have multiple sections in separate file.
+    """
+    cfgobj = NMLConfig(fixture_path("include_files_with_sect.nml"))
+    assert cfgobj["config"]["fruit"] == "papaya"
+    assert cfgobj["config"]["how_many"] == 17
+    assert cfgobj["config"]["meat"] == "beef"
+    assert cfgobj["config"]["dressing"] == "ranch"
+    assert cfgobj["setting"]["size"] == "large"
+    assert len(cfgobj["config"]) == 5
+    assert len(cfgobj["setting"]) == 3
+
+
+def test_nml_derived_type_dict():
+    nml = NMLConfig(config={"nl": {"o": {"i": 77, "j": 88}}})
+    assert nml["nl"]["o"] == {"i": 77, "j": 88}
+
+
+def test_nml_derived_type_file(tmp_path):
+    s = """
+    &nl
+      o%i = 77
+      o%j = 88
+    /
+    """
+    path = tmp_path / "a.nml"
+    with open(path, "w", encoding="utf-8") as f:
+        print(dedent(s).strip(), file=f)
+    nml = NMLConfig(config=path)
+    assert nml["nl"]["o"] == {"i": 77, "j": 88}
+
+
 def test_nml_dump_dict_dict(data, tmp_path):
     path = tmp_path / "a.nml"
     NMLConfig.dump_dict(cfg=data, path=path)
@@ -36,45 +88,6 @@ def test_nml_dump_dict_Namelist(data, tmp_path):
     NMLConfig.dump_dict(cfg=f90nml.Namelist(data), path=path)
     nml = f90nml.read(path)
     assert nml == data
-
-
-def test_nml_get_format():
-    assert NMLConfig.get_format() == FORMAT.nml
-
-
-def test_nml_get_depth_threshold():
-    assert NMLConfig.get_depth_threshold() == 2
-
-
-def test_nml_instantiation_depth():
-    with raises(UWConfigError) as e:
-        NMLConfig(config={1: {2: {3: 4}}})
-    assert str(e.value) == "Cannot instantiate depth-2 NMLConfig with depth-3 config"
-
-
-def test_nml_parse_include():
-    """
-    Test that non-YAML handles include tags properly.
-    """
-    cfgobj = NMLConfig(fixture_path("include_files.nml"))
-    assert cfgobj["config"]["fruit"] == "papaya"
-    assert cfgobj["config"]["how_many"] == 17
-    assert cfgobj["config"]["meat"] == "beef"
-    assert len(cfgobj["config"]) == 5
-
-
-def test_nml_parse_include_mult_sect():
-    """
-    Test that non-YAML handles include tags with files that have multiple sections in separate file.
-    """
-    cfgobj = NMLConfig(fixture_path("include_files_with_sect.nml"))
-    assert cfgobj["config"]["fruit"] == "papaya"
-    assert cfgobj["config"]["how_many"] == 17
-    assert cfgobj["config"]["meat"] == "beef"
-    assert cfgobj["config"]["dressing"] == "ranch"
-    assert cfgobj["setting"]["size"] == "large"
-    assert len(cfgobj["config"]) == 5
-    assert len(cfgobj["setting"]) == 3
 
 
 @mark.parametrize("func", [repr, str])

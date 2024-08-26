@@ -2,12 +2,14 @@ API
 ===
 
 .. toctree::
+   cdeps
    chgres_cube
    config
-   esg_grid
    driver
-   file
+   esg_grid
+   execute
    filter_topo
+   fs
    fv3
    global_equiv_resol
    ioda

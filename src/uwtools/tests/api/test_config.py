@@ -1,14 +1,15 @@
-# pylint: disable=missing-function-docstring,protected-access
+# pylint: disable=missing-function-docstring
 
 import os
 from pathlib import Path
 from unittest.mock import patch
 
 import yaml
-from pytest import mark
+from pytest import mark, raises
 
 from uwtools.api import config
 from uwtools.config.formats.yaml import YAMLConfig
+from uwtools.exceptions import UWConfigError, UWError
 from uwtools.utils.file import FORMAT
 
 
@@ -33,11 +34,11 @@ def test_compare():
 @mark.parametrize(
     "classname,f",
     [
-        ("_FieldTableConfig", config.get_fieldtable_config),
-        ("_INIConfig", config.get_ini_config),
-        ("_NMLConfig", config.get_nml_config),
-        ("_SHConfig", config.get_sh_config),
-        ("_YAMLConfig", config.get_yaml_config),
+        ("FieldTableConfig", config.get_fieldtable_config),
+        ("INIConfig", config.get_ini_config),
+        ("NMLConfig", config.get_nml_config),
+        ("SHConfig", config.get_sh_config),
+        ("YAMLConfig", config.get_yaml_config),
     ],
 )
 def test_get_config(classname, f):
@@ -91,21 +92,50 @@ def test_realize_to_dict():
     )
 
 
-@mark.parametrize("cfg", [{"foo": "bar"}, YAMLConfig(config={})])
-def test_validate(cfg):
-    kwargs: dict = {"schema_file": "schema-file", "config": cfg}
-    with patch.object(config, "_validate_external", return_value=True) as _validate_external:
-        assert config.validate(**kwargs)
-    _validate_external.assert_called_once_with(
-        schema_file=Path(kwargs["schema_file"]), config=kwargs["config"]
+def test_realize_update_config_from_stdin():
+    with raises(UWError) as e:
+        config.realize(input_config={}, output_file="output.yaml", update_format="yaml")
+    assert str(e.value) == "Set stdin_ok=True to permit read from stdin"
+
+
+def test_realize_update_config_none():
+    input_config = {"n": 88}
+    output_file = Path("output.yaml")
+    with patch.object(config, "_realize") as _realize:
+        config.realize(input_config=input_config, output_file=output_file)
+    _realize.assert_called_once_with(
+        input_config=input_config,
+        input_format=None,
+        update_config=None,
+        update_format=None,
+        output_file=output_file,
+        output_format=None,
+        key_path=None,
+        values_needed=False,
+        total=False,
+        dry_run=False,
     )
 
 
-def test_validate_config_file(tmp_path):
+@mark.parametrize("cfg", [{"foo": "bar"}, YAMLConfig(config={})])
+def test_validate(cfg):
+    kwargs: dict = {"schema_file": "schema-file", "config": cfg}
+    with patch.object(config, "_validate_external") as _validate_external:
+        assert config.validate(**kwargs) is True
+        _validate_external.side_effect = UWConfigError()
+        assert config.validate(**kwargs) is False
+    _validate_external.assert_called_with(
+        schema_file=Path(kwargs["schema_file"]),
+        config=kwargs["config"],
+    )
+
+
+@mark.parametrize("cast", (str, Path))
+def test_validate_config_file(cast, tmp_path):
     cfg = tmp_path / "config.yaml"
     with open(cfg, "w", encoding="utf-8") as f:
         yaml.dump({}, f)
-    kwargs: dict = {"schema_file": "schema-file", "config": cfg}
+    kwargs: dict = {"schema_file": "schema-file", "config": cast(cfg)}
     with patch.object(config, "_validate_external", return_value=True) as _validate_external:
         assert config.validate(**kwargs)
     _validate_external.assert_called_once_with(schema_file=Path(kwargs["schema_file"]), config=cfg)

@@ -1,6 +1,8 @@
 ``sfc_climo_gen``
 =================
 
+.. include:: /shared/idempotent.rst
+
 The ``uw`` mode for configuring and running the :sfc-climo-gen:`sfc_climo_gen<>` component.
 
 .. literalinclude:: sfc_climo_gen/help.cmd
@@ -56,3 +58,11 @@ Its contents are described in depth in section :ref:`sfc_climo_gen_yaml`.
   .. code-block:: text
 
      $ uw sfc_climo_gen provisioned_rundir --config-file config.yaml --batch
+
+* Specifying the ``--show-schema`` flag, with no other options, prints the driver's schema:
+
+.. literalinclude:: sfc_climo_gen/show-schema.cmd
+   :language: text
+   :emphasize-lines: 1
+.. literalinclude:: sfc_climo_gen/show-schema.out
+   :language: text
