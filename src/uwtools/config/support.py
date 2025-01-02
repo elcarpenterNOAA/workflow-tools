@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 from collections import OrderedDict
 from datetime import datetime
+from functools import partial
 from importlib import import_module
 from typing import Callable, Type, Union
 
@@ -120,33 +121,25 @@ class UWYAMLConvert(UWYAMLTag):
     """
 
     TAGS = ("!bool", "!datetime", "!dict", "!float", "!int", "!list")
+    ValT = Union[bool, datetime, dict, float, int, list]
 
-    def convert(self) -> Union[datetime, dict, float, int, list]:
+    def convert(self) -> UWYAMLConvert.ValT:
         """
         Return the original YAML value converted to the specified type.
 
         Will raise an exception if the value cannot be represented as the specified type.
         """
-        converters: dict[
-            str,
-            Union[
-                Callable[[str], bool],
-                Callable[[str], datetime],
-                Callable[[str], dict],
-                type[float],
-                type[int],
-                Callable[[str], list],
-            ],
-        ] = dict(
+        load_as = lambda t, v: t(yaml.safe_load(str(v)))
+        converters: dict[str, Callable[..., UWYAMLConvert.ValT]] = dict(
             zip(
                 self.TAGS,
                 [
-                    lambda x: bool(yaml.safe_load(x)),
+                    partial(load_as, bool),
                     datetime.fromisoformat,
-                    lambda x: dict(yaml.safe_load(x)),
+                    partial(load_as, dict),
                     float,
                     int,
-                    lambda x: list(yaml.safe_load(x)),
+                    partial(load_as, list),
                 ],
             )
         )
