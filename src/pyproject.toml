@@ -35,6 +35,7 @@ disable = [
   "consider-using-f-string",
   "duplicate-code",
   "invalid-name",
+  "missing-function-docstring",
   "missing-module-docstring",
   "too-few-public-methods",
   "too-many-arguments",

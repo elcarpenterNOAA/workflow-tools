@@ -224,9 +224,9 @@ def unrendered(s: str) -> bool:
     """
     try:
         Environment(undefined=StrictUndefined).from_string(s).render({})
-        return False
     except UndefinedError:
         return True
+    return False
 
 
 # Private functions
@@ -246,9 +246,10 @@ def _deref_convert(val: UWYAMLConvert) -> _ConfigVal:
     deref_debug("Converting", val.value)
     try:
         converted = val.convert()
-        deref_debug("Converted", converted)
     except Exception as e:  # pylint: disable=broad-exception-caught
         deref_debug("Conversion failed", str(e))
+    else:
+        deref_debug("Converted", converted)
     return converted
 
 
@@ -268,12 +269,13 @@ def _deref_render(val: str, context: dict, local: Optional[dict] = None) -> str:
     context = {**(local or {}), **context}
     try:
         rendered = _register_filters(env).from_string(val).render(context)
-        deref_debug("Rendered", rendered)
     except Exception as e:  # pylint: disable=broad-exception-caught
         rendered = val
         deref_debug("Rendering failed", val)
         for line in str(e).split("\n"):
             deref_debug(line)
+    else:
+        deref_debug("Rendered", rendered)
     try:
         loaded = yaml.load(rendered, Loader=uw_yaml_loader())
     except Exception as e:  # pylint: disable=broad-exception-caught
