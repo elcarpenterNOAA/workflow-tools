@@ -81,7 +81,7 @@ class Test_UWYAMLConvert:
 
     @fixture
     def loader(self):
-        yaml.add_representer(support.UWYAMLConvert, support.UWYAMLTag.represent)
+        yaml.add_representer(support.UWYAMLConvert, support.UWYAMLConvert.represent)
         return yaml.SafeLoader("")
 
     # These tests bypass YAML parsing, constructing nodes with explicit string values. They then
@@ -111,9 +111,9 @@ class Test_UWYAMLConvert:
             ts.convert()
 
     def test_dict_ok(self, loader):
-        ts = support.UWYAMLConvert(loader, yaml.ScalarNode(tag="!dict", value="{a0: 0, a1: 1}"))
+        ts = support.UWYAMLConvert(loader, yaml.ScalarNode(tag="!dict", value="{a0: 0,a1: 1,}"))
         assert ts.convert() == {"a0": 0, "a1": 1}
-        self.comp(ts, "!dict '{a0: 0, a1: 1}'")
+        self.comp(ts, "!dict '{a0: 0,a1: 1,}'")
 
     def test_float_no(self, loader):
         ts = support.UWYAMLConvert(loader, yaml.ScalarNode(tag="!float", value="foo"))
@@ -141,9 +141,9 @@ class Test_UWYAMLConvert:
             ts.convert()
 
     def test_list_ok(self, loader):
-        ts = support.UWYAMLConvert(loader, yaml.ScalarNode(tag="!list", value="[1, 2, 3,]"))
+        ts = support.UWYAMLConvert(loader, yaml.ScalarNode(tag="!list", value="[1,2,3,]"))
         assert ts.convert() == [1, 2, 3]
-        self.comp(ts, "!list '[1, 2, 3,]'")
+        self.comp(ts, "!list '[1,2,3,]'")
 
     def test___repr__(self, loader):
         ts = support.UWYAMLConvert(loader, yaml.ScalarNode(tag="!int", value="42"))
@@ -156,6 +156,6 @@ class Test_UWYAMLRemove:
     """
 
     def test___repr__(self):
-        yaml.add_representer(support.UWYAMLRemove, support.UWYAMLTag.represent)
+        yaml.add_representer(support.UWYAMLRemove, support.UWYAMLRemove.represent)
         node = support.UWYAMLRemove(yaml.SafeLoader(""), yaml.ScalarNode(tag="!remove", value=""))
         assert str(node) == "!remove"
