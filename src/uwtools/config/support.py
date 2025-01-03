@@ -131,20 +131,15 @@ class UWYAMLConvert(UWYAMLTag):
         Will raise an exception if the value cannot be represented as the specified type.
         """
         load_as = lambda t, v: t(yaml.safe_load(str(v)))
-        converters: dict[str, Callable[..., UWYAMLConvert.ValT]] = dict(
-            zip(
-                self.TAGS,
-                [
-                    partial(load_as, bool),
-                    datetime.fromisoformat,
-                    partial(load_as, dict),
-                    float,
-                    int,
-                    partial(load_as, list),
-                ],
-            )
-        )
-        return converters[self.tag](self.value)
+        converters: list[Callable[..., UWYAMLConvert.ValT]] = [
+            partial(load_as, bool),
+            datetime.fromisoformat,
+            partial(load_as, dict),
+            float,
+            int,
+            partial(load_as, list),
+        ]
+        return dict(zip(self.TAGS, converters))[self.tag](self.value)
 
 
 class UWYAMLRemove(UWYAMLTag):
