@@ -80,16 +80,14 @@ def uw_yaml_loader() -> type[yaml.SafeLoader]:
     return loader
 
 
-def yaml_to_str(cfg: dict, sort: bool = False) -> str:
+def yaml_to_str(d: dict, sort: bool = False) -> str:
     """
     Return a uwtools-conventional YAML representation of the given dict.
 
-    :param cfg: A dict object.
+    :param d: A dict object.
     :param sort: Sort dict/mapping keys?
     """
-    return yaml.dump(
-        cfg, default_flow_style=False, indent=2, sort_keys=sort, width=math.inf
-    ).strip()
+    return yaml.dump(d, default_flow_style=False, indent=2, sort_keys=sort, width=math.inf).strip()
 
 
 class UWYAMLTag:
