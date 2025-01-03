@@ -81,7 +81,7 @@ class Test_UWYAMLConvert:
 
     @fixture
     def loader(self):
-        yaml.add_representer(support.UWYAMLConvert, support.UWYAMLConvert.represent)
+        yaml.add_representer(support.UWYAMLConvert, support.UWYAMLTag.represent)
         return yaml.SafeLoader("")
 
     # These tests bypass YAML parsing, constructing nodes with explicit string values. They then
@@ -156,6 +156,6 @@ class Test_UWYAMLRemove:
     """
 
     def test___repr__(self):
-        yaml.add_representer(support.UWYAMLRemove, support.UWYAMLRemove.represent)
+        yaml.add_representer(support.UWYAMLRemove, support.UWYAMLTag.represent)
         node = support.UWYAMLRemove(yaml.SafeLoader(""), yaml.ScalarNode(tag="!remove", value=""))
         assert str(node) == "!remove"
