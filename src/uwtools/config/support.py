@@ -126,7 +126,7 @@ class UWYAMLConvert(UWYAMLTag):
 
     def convert(self) -> UWYAMLConvert.ValT:
         """
-        Return the original YAML value converted to the specified type.
+        Return the original YAML value converted to the type speficied by the tag.
 
         Will raise an exception if the value cannot be represented as the specified type.
         """
