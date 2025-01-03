@@ -11,7 +11,7 @@ from typing import Optional, Union
 import yaml
 
 from uwtools.config import jinja2
-from uwtools.config.support import INCLUDE_TAG, depth, log_and_error, yaml_to_str
+from uwtools.config.support import INCLUDE_TAG, depth, dict_to_yaml_str, log_and_error
 from uwtools.exceptions import UWConfigError
 from uwtools.logging import INDENT, MSGWIDTH, log
 from uwtools.utils.file import str2path
@@ -86,7 +86,7 @@ class Config(ABC, UserDict):
         :param d: A dict object.
         """
         sio = StringIO()
-        sio.write(yaml_to_str(d, sort=True))
+        sio.write(dict_to_yaml_str(d, sort=True))
         return sio.getvalue().splitlines(keepends=True)
 
     @staticmethod
@@ -223,7 +223,7 @@ class Config(ABC, UserDict):
 
         def logstate(state: str) -> None:
             jinja2.deref_debug("Dereferencing, %s value:" % state)
-            for line in yaml_to_str(self.data).split("\n"):
+            for line in dict_to_yaml_str(self.data).split("\n"):
                 jinja2.deref_debug("%s%s" % (INDENT, line))
 
         while True:

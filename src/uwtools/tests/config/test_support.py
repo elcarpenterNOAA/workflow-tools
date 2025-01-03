@@ -27,6 +27,16 @@ def test_depth(d, n):
     assert support.depth(d) == n
 
 
+def test_dict_to_yaml_str(capsys):
+    xs = " ".join("x" * 999)
+    expected = f"xs: {xs}"
+    cfgobj = YAMLConfig({"xs": xs})
+    assert repr(cfgobj) == expected
+    assert str(cfgobj) == expected
+    cfgobj.dump()
+    assert capsys.readouterr().out.strip() == expected
+
+
 @mark.parametrize(
     "cfgtype,fmt",
     [
@@ -59,16 +69,6 @@ def test_log_and_error(caplog):
         raise support.log_and_error(msg)
     assert msg in str(e.value)
     assert logged(caplog, msg)
-
-
-def test_yaml_to_str(capsys):
-    xs = " ".join("x" * 999)
-    expected = f"xs: {xs}"
-    cfgobj = YAMLConfig({"xs": xs})
-    assert repr(cfgobj) == expected
-    assert str(cfgobj) == expected
-    cfgobj.dump()
-    assert capsys.readouterr().out.strip() == expected
 
 
 class Test_UWYAMLConvert:

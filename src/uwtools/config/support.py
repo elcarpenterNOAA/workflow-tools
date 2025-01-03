@@ -80,7 +80,7 @@ def uw_yaml_loader() -> type[yaml.SafeLoader]:
     return loader
 
 
-def yaml_to_str(d: dict, sort: bool = False) -> str:
+def dict_to_yaml_str(d: dict, sort: bool = False) -> str:
     """
     Return a uwtools-conventional YAML representation of the given dict.
 
