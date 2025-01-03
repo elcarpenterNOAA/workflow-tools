@@ -5,7 +5,6 @@ from abc import ABC, abstractmethod
 from collections import UserDict
 from copy import deepcopy
 from io import StringIO
-from math import inf
 from pathlib import Path
 from typing import Optional, Union
 
@@ -87,7 +86,7 @@ class Config(ABC, UserDict):
         :param d: A dict object.
         """
         sio = StringIO()
-        yaml.safe_dump(d, stream=sio, default_flow_style=False, indent=2, width=inf)
+        sio.write(yaml_to_str(d, sort=True))
         return sio.getvalue().splitlines(keepends=True)
 
     @staticmethod
