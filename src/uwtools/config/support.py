@@ -132,6 +132,9 @@ class UWYAMLConvert(UWYAMLTag):
                 % (node.value.__class__.__name__, self.value)
             )
 
+    def __str__(self) -> str:
+        return str(self.converted)
+
     @property
     def converted(self) -> UWYAMLConvert.ValT:
         """

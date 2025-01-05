@@ -139,6 +139,7 @@ def dereference(
         deref_debug("Rendering", val)
         rendered = _deref_render(val, context, local)
     elif isinstance(val, UWYAMLConvert):
+        # breakpoint()
         deref_debug("Rendering", val.value)
         val.value = _deref_render(val.value, context, local)
         rendered = _deref_convert(val)
@@ -265,10 +266,11 @@ def _deref_render(val: str, context: dict, local: Optional[dict] = None) -> str:
     :param local: Local sibling values to use if a match is not found in context.
     :return: The rendered value (potentially unchanged).
     """
-    env = Environment(undefined=StrictUndefined)
+    env = _register_filters(Environment(undefined=StrictUndefined))
+    template = env.from_string(val)
     context = {**(local or {}), **context}
     try:
-        rendered = _register_filters(env).from_string(val).render(context)
+        rendered = template.render(context)
     except Exception as e:  # pylint: disable=broad-exception-caught
         rendered = val
         deref_debug("Rendering failed", val)
