@@ -156,11 +156,9 @@ def deref_debug(action: str, val: Optional[_ConfigVal] = None) -> None:
     :param action: The dereferencing activity being performed.
     :param val: The value being dereferenced.
     """
-    prefix = "[dereference]"
-    if val:
-        log.debug("%s %s: %s", prefix, action, val)
-    else:
-        log.debug("%s %s", prefix, action)
+    tag = "[dereference]"
+    args = ("%s %s", tag, action) if val is None else ("%s %s: %s", tag, action, val)
+    log.debug(*args)
 
 
 def render(
