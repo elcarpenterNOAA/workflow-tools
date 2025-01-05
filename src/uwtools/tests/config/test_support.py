@@ -84,6 +84,25 @@ class Test_UWYAMLConvert:
         yaml.add_representer(support.UWYAMLConvert, support.UWYAMLTag.represent)
         return yaml.SafeLoader("")
 
+    @mark.parametrize(
+        "tag,val,val_type",
+        [
+            ("!bool", True, "bool"),
+            ("!dict", {1: 2}, "dict"),
+            ("!float", 3.14, "float"),
+            ("!int", 42, "int"),
+            ("!list", [1, 2], "list"),
+        ],
+    )
+    def test_UWYAMLConvert_bad_non_str(self, loader, tag, val, val_type):
+        with raises(UWConfigError) as e:
+            support.UWYAMLConvert(loader, yaml.ScalarNode(tag=tag, value=val))
+        assert str(e.value) == "Tagged value must be type 'str' (not '%s'): %s %s" % (
+            val_type,
+            tag,
+            val,
+        )
+
     # These tests bypass YAML parsing, constructing nodes with explicit string values. They then
     # demonstrate that those nodes' convert() methods return representations in the type specified
     # by the tag.
