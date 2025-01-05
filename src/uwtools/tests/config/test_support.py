@@ -97,11 +97,8 @@ class Test_UWYAMLConvert:
     def test_UWYAMLConvert_bad_non_str(self, loader, tag, val, val_type):
         with raises(UWConfigError) as e:
             support.UWYAMLConvert(loader, yaml.ScalarNode(tag=tag, value=val))
-        assert str(e.value) == "Tagged value must be type 'str' (not '%s') in: %s %s" % (
-            val_type,
-            tag,
-            val,
-        )
+        msg = "Value tagged %s must be type 'str' (not '%s') in: %s %s"
+        assert str(e.value) == msg % (tag, val_type, tag, val)
 
     # These tests bypass YAML parsing, constructing nodes with explicit string values. They then
     # demonstrate that those nodes' convert() methods return representations in the type specified

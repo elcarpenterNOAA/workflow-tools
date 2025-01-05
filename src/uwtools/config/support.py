@@ -133,8 +133,8 @@ class UWYAMLConvert(UWYAMLTag):
                 else node.start_mark.buffer.replace("\n\x00", "")
             )
             raise UWConfigError(
-                "Tagged value must be type 'str' (not '%s') in: %s"
-                % (node.value.__class__.__name__, hint)
+                "Value tagged %s must be type 'str' (not '%s') in: %s"
+                % (node.tag, node.value.__class__.__name__, hint)
             )
 
     def __str__(self) -> str:
