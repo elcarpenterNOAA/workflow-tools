@@ -139,7 +139,6 @@ def dereference(
         deref_debug("Rendering", val)
         rendered = _deref_render(val, context, local)
     elif isinstance(val, UWYAMLConvert):
-        # breakpoint()
         deref_debug("Rendering", val.value)
         val.value = _deref_render(val.value, context, local)
         rendered = _deref_convert(val)
