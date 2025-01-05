@@ -124,6 +124,14 @@ class UWYAMLConvert(UWYAMLTag):
     TAGS = ("!bool", "!datetime", "!dict", "!float", "!int", "!list")
     ValT = Union[bool, datetime, dict, float, int, list]
 
+    def __init__(self, loader: yaml.SafeLoader, node: yaml.nodes.ScalarNode) -> None:
+        super().__init__(loader, node)
+        if not isinstance(self.value, str):
+            raise UWConfigError(
+                "Tagged value must be type 'str' (not '%s'): %s"
+                % (node.value.__class__.__name__, self.value)
+            )
+
     def convert(self) -> UWYAMLConvert.ValT:
         """
         Return the original YAML value converted to the type speficied by the tag.
