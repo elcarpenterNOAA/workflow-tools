@@ -149,14 +149,18 @@ def dereference(
     return rendered
 
 
-def deref_debug(action: str, val: Optional[_ConfigVal] = "") -> None:
+def deref_debug(action: str, val: Optional[_ConfigVal] = None) -> None:
     """
     Log a debug-level message related to dereferencing.
 
     :param action: The dereferencing activity being performed.
     :param val: The value being dereferenced.
     """
-    log.debug("[dereference] %s: %s", action, val)
+    prefix = "[dereference]"
+    if val:
+        log.debug("%s %s: %s", prefix, action, val)
+    else:
+        log.debug("%s %s", prefix, action)
 
 
 def render(

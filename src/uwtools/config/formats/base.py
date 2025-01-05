@@ -87,7 +87,7 @@ class Config(ABC, UserDict):
         """
         sio = StringIO()
         sio.write(dict_to_yaml_str(d, sort=True))
-        return sio.getvalue().splitlines(keepends=True)
+        return sio.getvalue().splitlines(keepends=False)
 
     @staticmethod
     def _compare_config_log_header() -> None:
