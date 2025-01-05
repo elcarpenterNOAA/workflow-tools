@@ -245,7 +245,7 @@ def _deref_convert(val: UWYAMLConvert) -> _ConfigVal:
     converted: _ConfigVal = val  # fall-back value
     deref_debug("Converting", val.value)
     try:
-        converted = val.convert()
+        converted = val.converted
     except Exception as e:  # pylint: disable=broad-exception-caught
         deref_debug("Conversion failed", str(e))
     else:

@@ -91,58 +91,58 @@ class Test_UWYAMLConvert:
     @mark.parametrize("value, expected", [("False", False), ("True", True)])
     def test_bool_values(self, expected, loader, value):
         ts = support.UWYAMLConvert(loader, yaml.ScalarNode(tag="!bool", value=value))
-        assert ts.convert() == expected
+        assert ts.converted == expected
 
     def test_datetime_no(self, loader):
         ts = support.UWYAMLConvert(loader, yaml.ScalarNode(tag="!datetime", value="foo"))
         with raises(ValueError):
-            ts.convert()
+            assert ts.converted
 
     def test_datetime_ok(self, loader):
         ts = support.UWYAMLConvert(
             loader, yaml.ScalarNode(tag="!datetime", value="2024-08-09 12:22:42")
         )
-        assert ts.convert() == datetime(2024, 8, 9, 12, 22, 42)
+        assert ts.converted == datetime(2024, 8, 9, 12, 22, 42)
         self.comp(ts, "!datetime '2024-08-09 12:22:42'")
 
     def test_dict_no(self, loader):
         ts = support.UWYAMLConvert(loader, yaml.ScalarNode(tag="!dict", value="42"))
         with raises(TypeError):
-            ts.convert()
+            assert ts.converted
 
     def test_dict_ok(self, loader):
         ts = support.UWYAMLConvert(loader, yaml.ScalarNode(tag="!dict", value="{a0: 0,a1: 1,}"))
-        assert ts.convert() == {"a0": 0, "a1": 1}
+        assert ts.converted == {"a0": 0, "a1": 1}
         self.comp(ts, "!dict '{a0: 0,a1: 1,}'")
 
     def test_float_no(self, loader):
         ts = support.UWYAMLConvert(loader, yaml.ScalarNode(tag="!float", value="foo"))
         with raises(ValueError):
-            ts.convert()
+            assert ts.converted
 
     def test_float_ok(self, loader):
         ts = support.UWYAMLConvert(loader, yaml.ScalarNode(tag="!float", value="3.14"))
-        assert ts.convert() == 3.14
+        assert ts.converted == 3.14
         self.comp(ts, "!float '3.14'")
 
     def test_int_no(self, loader):
         ts = support.UWYAMLConvert(loader, yaml.ScalarNode(tag="!int", value="foo"))
         with raises(ValueError):
-            ts.convert()
+            assert ts.converted
 
     def test_int_ok(self, loader):
         ts = support.UWYAMLConvert(loader, yaml.ScalarNode(tag="!int", value="42"))
-        assert ts.convert() == 42
+        assert ts.converted == 42
         self.comp(ts, "!int '42'")
 
     def test_list_no(self, loader):
         ts = support.UWYAMLConvert(loader, yaml.ScalarNode(tag="!list", value="null"))
         with raises(TypeError):
-            ts.convert()
+            assert ts.converted
 
     def test_list_ok(self, loader):
         ts = support.UWYAMLConvert(loader, yaml.ScalarNode(tag="!list", value="[1,2,3,]"))
-        assert ts.convert() == [1, 2, 3]
+        assert ts.converted == [1, 2, 3]
         self.comp(ts, "!list '[1,2,3,]'")
 
     def test___repr__(self, loader):
