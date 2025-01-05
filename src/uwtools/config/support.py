@@ -128,8 +128,8 @@ class UWYAMLConvert(UWYAMLTag):
         super().__init__(loader, node)
         if not isinstance(self.value, str):
             raise UWConfigError(
-                "Tagged value must be type 'str' (not '%s'): %s"
-                % (node.value.__class__.__name__, self.value)
+                "Tagged value must be type 'str' (not '%s'): %s %s"
+                % (node.value.__class__.__name__, self.tag, self.value)
             )
 
     def __str__(self) -> str:
