@@ -147,7 +147,7 @@ class Test_UWYAMLConvert:
 
     def test___repr__(self, loader):
         ts = support.UWYAMLConvert(loader, yaml.ScalarNode(tag="!int", value="42"))
-        assert str(ts) == "!int 42"
+        assert str(ts) == "42"
 
 
 class Test_UWYAMLRemove:
