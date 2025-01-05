@@ -127,14 +127,14 @@ class UWYAMLConvert(UWYAMLTag):
     def __init__(self, loader: yaml.SafeLoader, node: yaml.nodes.ScalarNode) -> None:
         super().__init__(loader, node)
         if not isinstance(self.value, str):
-            val = (
-                node.start_mark.buffer.replace("\n\x00", "")
-                if node.start_mark is not None
-                else node.value
+            hint = (
+                "%s %s" % (node.tag, node.value)
+                if node.start_mark is None
+                else node.start_mark.buffer.replace("\n\x00", "")
             )
             raise UWConfigError(
-                "Tagged value must be type 'str' (not '%s'): %s %s"
-                % (node.value.__class__.__name__, self.tag, val)
+                "Tagged value must be type 'str' (not '%s') in: %s"
+                % (node.value.__class__.__name__, hint)
             )
 
     def __str__(self) -> str:

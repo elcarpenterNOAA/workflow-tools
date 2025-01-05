@@ -97,7 +97,7 @@ class Test_UWYAMLConvert:
     def test_UWYAMLConvert_bad_non_str(self, loader, tag, val, val_type):
         with raises(UWConfigError) as e:
             support.UWYAMLConvert(loader, yaml.ScalarNode(tag=tag, value=val))
-        assert str(e.value) == "Tagged value must be type 'str' (not '%s'): %s %s" % (
+        assert str(e.value) == "Tagged value must be type 'str' (not '%s') in: %s %s" % (
             val_type,
             tag,
             val,
