@@ -23,11 +23,11 @@ from uwtools.utils.file import FORMAT
 
 
 @mark.parametrize("d,n", [({1: 42}, 1), ({1: {2: 42}}, 2), ({1: {2: {3: 42}}}, 3), ({1: {}}, 2)])
-def test_depth(d, n):
+def test_config_support_depth(d, n):
     assert support.depth(d) == n
 
 
-def test_dict_to_yaml_str(capsys):
+def test_config_support_dict_to_yaml_str(capsys):
     xs = " ".join("x" * 999)
     expected = f"xs: {xs}"
     cfgobj = YAMLConfig({"xs": xs})
@@ -47,22 +47,22 @@ def test_dict_to_yaml_str(capsys):
         (YAMLConfig, FORMAT.yaml),
     ],
 )
-def test_format_to_config(cfgtype, fmt):
+def test_config_support_format_to_config(cfgtype, fmt):
     assert support.format_to_config(fmt) is cfgtype
 
 
-def test_format_to_config_fail():
+def test_config_support_format_to_config_fail():
     with raises(UWConfigError):
         support.format_to_config("no-such-config-type")
 
 
-def test_from_od():
+def test_config_support_from_od():
     assert support.from_od(d=OrderedDict([("example", OrderedDict([("key", "value")]))])) == {
         "example": {"key": "value"}
     }
 
 
-def test_log_and_error(caplog):
+def test_config_support_log_and_error(caplog):
     log.setLevel(logging.ERROR)
     msg = "Something bad happened"
     with raises(UWConfigError) as e:
