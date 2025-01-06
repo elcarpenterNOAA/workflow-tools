@@ -161,9 +161,13 @@ class Test_UWYAMLConvert:
         assert ts.converted == [1, 2, 3]
         self.comp(ts, "!list '[1,2,3,]'")
 
+    def test_UWYAMLConvert___repr__(self, loader):
+        ts = support.UWYAMLConvert(loader, yaml.ScalarNode(tag="!list", value="[ 1,2,3, ]"))
+        assert repr(ts) == "!list [1, 2, 3]"
+
     def test_UWYAMLConvert___str__(self, loader):
-        ts = support.UWYAMLConvert(loader, yaml.ScalarNode(tag="!int", value="42"))
-        assert str(ts) == "42"
+        ts = support.UWYAMLConvert(loader, yaml.ScalarNode(tag="!list", value="[ 1,2,3, ]"))
+        assert str(ts) == "[1, 2, 3]"
 
 
 class Test_UWYAMLRemove:

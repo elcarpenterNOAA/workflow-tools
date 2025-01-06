@@ -137,6 +137,9 @@ class UWYAMLConvert(UWYAMLTag):
                 % (node.tag, node.value.__class__.__name__, hint)
             )
 
+    def __repr__(self) -> str:
+        return "%s %s" % (self.tag, self.converted)
+
     def __str__(self) -> str:
         return str(self.converted)
 
