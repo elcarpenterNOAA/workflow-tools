@@ -19,5 +19,7 @@ jobs:
         run: .github/scripts/format-check.sh
       - name: Make Package
         run: .github/scripts/make-package.sh
+      - name: Make PyPI Package
+        run: .github/scripts/pypi-package-build.sh
       - name: Publish
         run: .github/scripts/publish.sh
