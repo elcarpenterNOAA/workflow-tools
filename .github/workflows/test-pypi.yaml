@@ -1,0 +1,29 @@
+name: Test PyPI publishing
+
+on:
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    environment:
+      name: testpypi
+
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install conda
+        run: .github/scripts/install-conda.sh
+
+      - name: Build PyPI package
+        run: .github/scripts/pypi-package-build.sh
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: src/dist/
